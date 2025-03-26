@@ -1,4 +1,5 @@
 # sniffer.py
+'''
 import os
 import common
 import sys
@@ -25,4 +26,4 @@ def sniff_message(queue_name):
         print(f"Error sniffing message: {e}")
 
 if __name__ == "__main__":
-    sniff_message(common.QUEUE_NAME)
+    sniff_message(common.QUEUE_NAME)'''

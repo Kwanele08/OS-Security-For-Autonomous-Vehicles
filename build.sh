@@ -1,31 +1,27 @@
 #!/bin/bash
 
-# Start the receiver in the background
+echo "Starting receiver in the background..."
+# Start the receiver - it will bind and wait
 python3 receiver.py &
 receiver_pid=$!
 
-# Wait a short time for the receiver to start
-sleep 0.1
+# Wait a moment for the receiver to bind the socket
+sleep 1
 
-# Start the sender
+echo "Starting sender..."
+# Start the sender - it will connect, send, and exit
 python3 sender.py
 
-# Run the sniffer in the background
-python3 sniffer.py &
-sniffer_pid=$!
+# Wait for the sender to likely finish sending and the receiver to potentially process
+# Adjust sleep if needed, or implement more robust signaling
+sleep 1
 
-# Wait for the sender to finish, you might need to adjust this sleep time
-sleep 0.1
-
-# Clean up the receiver process
+echo "Stopping receiver process (PID: $receiver_pid)..."
+# Terminate the receiver process gracefully (SIGTERM)
+# If it doesn't stop, use kill -9 $receiver_pid
 kill $receiver_pid
+wait $receiver_pid 2>/dev/null # Wait for the process to actually exit, suppress errors
 
-kill $sniffer_pid
+echo "Build script finished."
 
-# Unlink (delete) the message queue (IMPORTANT!)
-# This is necessary to remove the queue after it's no longer needed.
-#rm /dev/mqueue/"$(cat common.py | grep "QUEUE_NAME" | cut -d '"' -f 2)" #Not needed with posix_ipc
-python3 -c "import posix_ipc, common; posix_ipc.unlink_message_queue('/' + common.QUEUE_NAME)"
-
-# Print exit code in case the script execution fails
-exit $?
+exit 0

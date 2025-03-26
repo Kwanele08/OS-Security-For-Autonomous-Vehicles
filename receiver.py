@@ -1,5 +1,5 @@
 # receiver.py
-import posix_ipc  # Import the posix_ipc library
+import zmq # Import ZeroMQ
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives import hashes, hmac
@@ -8,15 +8,42 @@ from cryptography.exceptions import InvalidSignature
 import common
 import os
 
-# ... (rest of your decrypt_data and verify_mac functions remain the same) ...
+# --- Cryptography Functions (No changes needed) ---
+def decrypt_data(ciphertext, key):
+    """Decrypts the data using AES-256 in CBC mode."""
+    iv = ciphertext[:16]
+    ciphertext = ciphertext[16:]
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    padded_data = decryptor.update(ciphertext) + decryptor.finalize()
+    unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+    data = unpadder.update(padded_data) + unpadder.finalize()
+    return data
 
-def receive_message(queue_name):
-    """Receives, verifies, and decrypts a message from POSIX MQ."""
+def verify_mac(data, mac, key):
+    """Verifies the HMAC-SHA256 MAC."""
+    h = hmac.HMAC(key, hashes.SHA256(), backend=default_backend())
+    h.update(data)
     try:
-        mq = posix_ipc.MessageQueue("/" + queue_name) # No O_CREAT flag here
-        msg_bytes, _ = mq.receive() # Use mq.receive()
-        mq.close()
+        h.verify(mac)
+        return True
+    except InvalidSignature:
+        return False
+# --- End Cryptography Functions ---
 
+def receive_message(context):
+    """Receives, verifies, and decrypts a message from ZeroMQ PULL socket."""
+
+    # Prepare socket (Bind to the address senders will connect to)
+    socket = context.socket(zmq.PULL)
+    socket.bind(common.ZMQ_ADDRESS)
+    print(f"Receiver bound to {common.ZMQ_ADDRESS}, waiting for messages...")
+
+    try:
+        # Receive message bytes (this will block until a message arrives)
+        msg_bytes = socket.recv()
+
+        # --- Process message (Same verification/decryption logic as before) ---
         message = common.deserialize_message(msg_bytes)
         received_mac = bytes.fromhex(message['mac'])
         received_data = bytes.fromhex(message['data'])
@@ -30,12 +57,27 @@ def receive_message(queue_name):
 
         print(f"Received message from {message['sender']}: {decrypted_data}")
         return decrypted_data
+        # --- End Process message ---
 
     except Exception as e:
         print(f"Error receiving message: {e}")
         return None
+    finally:
+        # Clean up the socket
+        socket.close()
+        print("Receiver socket closed.")
+
 
 if __name__ == "__main__":
-    received_data = receive_message(common.QUEUE_NAME)
+    # Create a single ZeroMQ context for the application
+    zmq_context = zmq.Context()
+
+    # Example usage:
+    received_data = receive_message(zmq_context)
     if received_data:
+        # Process the received data (e.g., update vehicle state)
         pass
+
+    # Clean up the context
+    zmq_context.term()
+    print("Receiver context terminated.")

@@ -1,5 +1,5 @@
 # receiver.py
-import zmq # Import ZeroMQ
+import zmq 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives import hashes, hmac
@@ -8,7 +8,7 @@ from cryptography.exceptions import InvalidSignature
 import common
 import os
 
-# --- Cryptography Functions (No changes needed) ---
+# Cryptography Functions 
 def decrypt_data(ciphertext, key):
     """Decrypts the data using AES-256 in CBC mode."""
     iv = ciphertext[:16]
@@ -29,7 +29,7 @@ def verify_mac(data, mac, key):
         return True
     except InvalidSignature:
         return False
-# --- End Cryptography Functions ---
+# End Cryptography Functions 
 
 def receive_message(context):
     """Receives, verifies, and decrypts a message from ZeroMQ PULL socket."""
@@ -43,7 +43,7 @@ def receive_message(context):
         # Receive message bytes (this will block until a message arrives)
         msg_bytes = socket.recv()
 
-        # --- Process message (Same verification/decryption logic as before) ---
+        # Process message
         message = common.deserialize_message(msg_bytes)
         received_mac = bytes.fromhex(message['mac'])
         received_data = bytes.fromhex(message['data'])
@@ -57,7 +57,7 @@ def receive_message(context):
 
         print(f"Received message from {message['sender']}: {decrypted_data}")
         return decrypted_data
-        # --- End Process message ---
+        # End Process message
 
     except Exception as e:
         print(f"Error receiving message: {e}")

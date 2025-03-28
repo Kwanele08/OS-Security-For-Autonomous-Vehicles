@@ -83,7 +83,7 @@ graph TD
 
     classDef decision fill:#f9f,stroke:#333,stroke-width:2px;
     class R_VerifyMAC decision;
-
+```
 
 git clone https://github.com/Kwanele08/OS-Security-For-Autonomous-Vehicles 
 cd OS-Security-For-Autonomous-Vehicles

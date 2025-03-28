@@ -8,7 +8,7 @@ import common
 import time
 import os
 
-# --- Cryptography Functions (No changes needed) ---
+# Cryptography Functions
 def encrypt_data(data, key):
     """Encrypts the data using AES-256 in CBC mode."""
     iv = os.urandom(16)
@@ -24,7 +24,7 @@ def generate_mac(data, key):
     h = hmac.HMAC(key, hashes.SHA256(), backend=default_backend())
     h.update(data)
     return h.finalize()
-# --- End Cryptography Functions ---
+# End Cryptography Functions
 
 def send_message(context, sender_id, data):
     """Encrypts, authenticates, and sends a message via ZeroMQ PUSH socket."""
@@ -35,7 +35,7 @@ def send_message(context, sender_id, data):
     print(f"Sender connected to {common.ZMQ_ADDRESS}")
 
     try:
-        # --- Prepare message (Same as before) ---
+        # Prepare message 
         message = common.create_message(sender_id, data)
         serialized_data = common.serialize_message(message['data'])
         encrypted_data = encrypt_data(serialized_data, common.SHARED_SECRET_KEY)
@@ -43,12 +43,12 @@ def send_message(context, sender_id, data):
         message['mac'] = mac.hex()
         final_message = common.create_message(sender_id, encrypted_data.hex())
         final_message['mac'] = mac.hex()
-        # --- End Prepare message ---
+        # End Prepare message
 
         # Serialize the final message for sending
         message_bytes = common.serialize_message(final_message)
 
-        # Add a small delay to ensure receiver is ready (especially on first run)
+        # Add a small delay to ensure receiver is ready 
         time.sleep(0.5)
 
         # Send the message bytes via ZeroMQ
